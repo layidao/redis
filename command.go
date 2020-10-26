@@ -337,6 +337,47 @@ func (cmd *SliceCmd) readReply(rd *proto.Reader) error {
 	return nil
 }
 
+type IntSliceCmd struct {
+	baseCmd
+
+	val []int64
+}
+
+var _ Cmder = (*IntSliceCmd)(nil)
+
+func NewIntSliceCmd(args ...interface{}) *IntSliceCmd {
+	return &IntSliceCmd{
+		baseCmd: baseCmd{_args: args},
+	}
+}
+
+func (cmd *IntSliceCmd) Val() []int64 {
+	return cmd.val
+}
+
+func (cmd *IntSliceCmd) Result() ([]int64, error) {
+	return cmd.val, cmd.err
+}
+
+func (cmd *IntSliceCmd) String() string {
+	return cmdString(cmd, cmd.val)
+}
+
+func (cmd *IntSliceCmd) readReply(rd *proto.Reader) error {
+	_, cmd.err = rd.ReadArrayReply(func(rd *proto.Reader, n int64) (interface{}, error) {
+		cmd.val = make([]int64, n)
+		for i := 0; i < len(cmd.val); i++ {
+			num, err := rd.ReadIntReply()
+			if err != nil {
+				return nil, err
+			}
+			cmd.val[i] = num
+		}
+		return nil, nil
+	})
+	return cmd.err
+}
+
 //------------------------------------------------------------------------------
 
 type StatusCmd struct {
